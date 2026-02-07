@@ -522,5 +522,4 @@ export default {
   validateRequired,
   validateEnvironment,
   methodNotAllowed,
-  handleCorsPreFlight,
 };

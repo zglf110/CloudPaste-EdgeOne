@@ -60,6 +60,8 @@ export default {
       // Native modules that can't be bundled
       'better-sqlite3',
       'mysql2',
+      'pg',
+      'jsonwebtoken',
     ],
   },
 };
