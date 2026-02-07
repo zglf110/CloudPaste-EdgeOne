@@ -95,7 +95,7 @@
 - **自动部署**：GitHub Actions 一键部署，支持自动触发
 - **手动部署**：Wrangler CLI 部署，灵活可控
 - **Docker 部署**：前后端镜像 + Docker Compose 一键启动
-- **多平台**：支持 Cloudflare、Vercel、ClawCloud、HuggingFace 等
+- **多平台**：支持 Cloudflare、EdgeOne、Vercel、ClawCloud、HuggingFace 等
 
 ## 🚀 部署教程
 
@@ -103,8 +103,18 @@
 
 在开始部署前，请确保您已准备以下内容：
 
+#### Cloudflare Workers 部署
 - [ ] [Cloudflare](https://dash.cloudflare.com) 账号（必需）
 - [ ] 如使用 R2：开通 **Cloudflare R2** 服务并创建存储桶（需绑定支付方式）
+
+#### 腾讯云 EdgeOne Pages 部署 ✨ 新增
+- [ ] [腾讯云 EdgeOne](https://edgeone.cloud.tencent.com/) 账号
+- [ ] 公网可访问的 MySQL 数据库（MySQL 5.7+ 或 8.0+）
+- [ ] Cloudflare R2 或其他 S3 兼容对象存储
+
+**📖 EdgeOne Pages 完整部署指南**: [查看 EDGEONE_DEPLOYMENT.md](EDGEONE_DEPLOYMENT.md)
+
+#### 通用配置
 - [ ] 如使用 Vercel：注册 [Vercel](https://vercel.com) 账号
 - [ ] 其他 S3 存储服务的配置信息：
     - `S3_ACCESS_KEY_ID`

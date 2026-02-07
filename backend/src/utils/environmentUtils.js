@@ -1,73 +1,144 @@
 /**
  * 环境检测和配置工具
- * 用于根据部署环境（Cloudflare Worker vs Docker/Server）提供最优配置
+ * 用于根据部署环境（Cloudflare Worker vs EdgeOne Pages vs Docker/Server）提供最优配置
  */
 
 /**
- * 检测当前是否运行在Cloudflare Worker环境
- * @returns {boolean} 是否为Worker环境
+ * 获取云平台类型
+ * @param {any} env - 环境变量对象
+ * @returns {'cloudflare'|'edgeone'|'docker'} 云平台类型
  */
-export function isCloudflareWorkerEnvironment() {
-  // Wrangler 开发环境检测
-  // 检测 Wrangler 特征：有 caches 和 Response，但仍有 process（wrangler dev --local）
-  if (typeof caches !== "undefined" && typeof Response !== "undefined" && typeof window === "undefined" && typeof process !== "undefined") {
-    // 进一步检测是否为 Wrangler 环境
-    const hasWorkerFeatures = typeof navigator !== "undefined" && typeof globalThis !== "undefined";
-    if (hasWorkerFeatures) {
-      return true;
+export function getCloudPlatform(env = {}) {
+  // 优先使用显式指定的 CLOUD_PLATFORM 环境变量
+  const explicit = env?.CLOUD_PLATFORM || (typeof process !== "undefined" ? process.env?.CLOUD_PLATFORM : null);
+  if (explicit) {
+    const normalized = String(explicit).toLowerCase();
+    if (normalized === "edgeone" || normalized === "tencent" || normalized === "tencent-edgeone") {
+      return "edgeone";
+    }
+    if (normalized === "cloudflare" || normalized === "cf") {
+      return "cloudflare";
+    }
+    if (normalized === "docker" || normalized === "node") {
+      return "docker";
     }
   }
 
-  // 标准 Cloudflare Workers 检测
-  return typeof caches !== "undefined" && typeof Response !== "undefined" && typeof process === "undefined" && typeof window === "undefined";
+  // 自动检测：如果在 Node.js 环境，默认为 docker
+  if (typeof process !== "undefined" && process.versions && process.versions.node) {
+    return "docker";
+  }
+
+  // 自动检测：Cloudflare Workers 环境特征
+  if (typeof caches !== "undefined" && typeof Response !== "undefined") {
+    return "cloudflare";
+  }
+
+  // 默认返回 cloudflare（向后兼容）
+  return "cloudflare";
+}
+
+/**
+ * 检测当前是否运行在Cloudflare Worker环境
+ * @param {any} env - 环境变量对象
+ * @returns {boolean} 是否为Worker环境
+ */
+export function isCloudflareWorkerEnvironment(env = {}) {
+  return getCloudPlatform(env) === "cloudflare";
+}
+
+/**
+ * 检测当前是否运行在腾讯云EdgeOne Pages环境
+ * @param {any} env - 环境变量对象
+ * @returns {boolean} 是否为EdgeOne环境
+ */
+export function isEdgeOneEnvironment(env = {}) {
+  return getCloudPlatform(env) === "edgeone";
 }
 
 /**
  * 获取环境自适应的上传配置
+ * @param {any} env - 环境变量对象
  * @returns {Object} 上传配置对象
  */
-export function getEnvironmentOptimizedUploadConfig() {
-  const isWorker = isCloudflareWorkerEnvironment();
+export function getEnvironmentOptimizedUploadConfig(env = {}) {
+  const platform = getCloudPlatform(env);
 
-  return isWorker
-    ? {
+  switch (platform) {
+    case "cloudflare":
+      return {
         partSize: 6 * 1024 * 1024, // 6MB - Worker环境内存限制
         queueSize: 1, // 1并发 - 避免CPU时间超限
         environment: "Cloudflare Worker",
         maxConcurrency: 1, // 最大并发数
         bufferSize: 6 * 1024 * 1024, // 缓冲区大小
-      }
-    : {
+      };
+    case "edgeone":
+      return {
+        partSize: 6 * 1024 * 1024, // 6MB - EdgeOne Pages类似限制
+        queueSize: 2, // 2并发 - EdgeOne可能支持略高并发
+        environment: "Tencent EdgeOne",
+        maxConcurrency: 2, // 最大并发数
+        bufferSize: 6 * 1024 * 1024, // 缓冲区大小
+      };
+    case "docker":
+    default:
+      return {
         partSize: 8 * 1024 * 1024, // 8MB - Docker环境更大分片
         queueSize: 4, // 4并发
         environment: "Docker/Server",
         maxConcurrency: 4, // 最大并发数
         bufferSize: 32 * 1024 * 1024, // 缓冲区大小
       };
+  }
 }
 
 /**
  * 获取环境名称
+ * @param {any} env - 环境变量对象
  * @returns {string} 环境名称
  */
-export function getEnvironmentName() {
-  return isCloudflareWorkerEnvironment() ? "Cloudflare Worker" : "Docker/Server";
+export function getEnvironmentName(env = {}) {
+  const platform = getCloudPlatform(env);
+  switch (platform) {
+    case "cloudflare":
+      return "Cloudflare Worker";
+    case "edgeone":
+      return "Tencent EdgeOne";
+    case "docker":
+      return "Docker/Server";
+    default:
+      return "Unknown";
+  }
 }
 
 /**
  * 获取推荐的分片大小
+ * @param {any} env - 环境变量对象
  * @returns {number} 分片大小（字节）
  */
-export function getRecommendedPartSize() {
-  return isCloudflareWorkerEnvironment() ? 6 * 1024 * 1024 : 8 * 1024 * 1024;
+export function getRecommendedPartSize(env = {}) {
+  const platform = getCloudPlatform(env);
+  return platform === "docker" ? 8 * 1024 * 1024 : 6 * 1024 * 1024;
 }
 
 /**
  * 获取推荐的并发数
+ * @param {any} env - 环境变量对象
  * @returns {number} 并发数
  */
-export function getRecommendedConcurrency() {
-  return isCloudflareWorkerEnvironment() ? 1 : 4;
+export function getRecommendedConcurrency(env = {}) {
+  const platform = getCloudPlatform(env);
+  switch (platform) {
+    case "cloudflare":
+      return 1;
+    case "edgeone":
+      return 2;
+    case "docker":
+      return 4;
+    default:
+      return 1;
+  }
 }
 
 /**

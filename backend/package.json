@@ -50,6 +50,7 @@
   },
   "optionalDependencies": {
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.6"
+    "sqlite3": "^5.1.6",
+    "mysql2": "^3.11.0"
   }
 }

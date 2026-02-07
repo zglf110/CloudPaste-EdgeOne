@@ -1,5 +1,6 @@
 // unified-entry.js - 统一入口
 // 在 Cloudflare Workers 环境下导出 { fetch } 处理函数
+// 在 Tencent EdgeOne Pages 环境下导出 { fetch } 处理函数并支持 MySQL
 // 在 Node/Docker 环境下启动基于 Hono 的 HTTP 服务器
 
 // 顶层导入仅包含跨环境可用的模块（Hono 应用与公共工具）
@@ -11,6 +12,7 @@ import { registerJobTypes, validateJobTypesConsistency } from "./src/storage/fs/
 import { registerScheduledHandlers } from "./src/scheduled/ScheduledTaskRegistry.js";
 import { runDueScheduledJobs } from "./src/scheduled/runDueScheduledJobs.js";
 import { upsertSchedulerTickState } from "./src/services/schedulerTickerStateService.js";
+import { getCloudPlatform } from "./src/utils/environmentUtils.js";
 
 // 在模块加载时注册所有任务处理器和调度任务处理器
 registerTaskHandlers();
@@ -18,7 +20,7 @@ registerJobTypes();
 validateJobTypesConsistency();
 registerScheduledHandlers();
 
-// 运行时环境检测：通过 caches.default 判断是否为 Cloudflare Workers
+// 运行时环境检测：通过 caches.default 判断是否为 Cloudflare Workers/EdgeOne Pages
 const isCloudflareWorkers = (() => {
   try {
     return typeof caches !== "undefined" && typeof caches.default !== "undefined";
@@ -39,25 +41,55 @@ export const JobWorkflow = isCloudflareWorkers
       }
     };
 
-// ============ Cloudflare Workers 环境导出 ============
-// 默认导出 fetch，只在 Workers 环境下由 Cloudflare 调用；
+// ============ Cloudflare Workers / EdgeOne Pages 环境导出 ============
+// 默认导出 fetch，在 Workers/EdgeOne 环境下由平台调用；
 // 在 Node 环境下不会被使用
 let dbInitPromise = null;
+let dbAdapter = null;
 
 async function ensureDbReadyOnce(env) {
   if (dbInitPromise) return dbInitPromise;
-  if (!env?.DB) {
-    throw new Error("DB 未绑定，请在 Cloudflare 绑定中配置 D1 数据库");
-  }
 
-  dbInitPromise = ensureDatabaseReady({ db: env.DB, env });
+  dbInitPromise = (async () => {
+    const platform = getCloudPlatform(env);
+
+    // EdgeOne Pages 环境：使用 MySQL 数据库
+    if (platform === "edgeone") {
+      console.log("[EdgeOne] 检测到 EdgeOne Pages 环境，初始化 MySQL 连接");
+
+      // 动态导入 MySQL 适配器（仅在需要时加载）
+      const { createMySQLAdapterFromEnv } = await import(`${"."}/src/adapters/MySQLAdapter.js`);
+
+      try {
+        dbAdapter = await createMySQLAdapterFromEnv(env);
+        await ensureDatabaseReady({ db: dbAdapter, env, providerName: "mysql" });
+        console.log("[EdgeOne] MySQL 数据库连接成功");
+        return dbAdapter;
+      } catch (error) {
+        console.error("[EdgeOne] MySQL 连接失败:", error);
+        throw new Error(`MySQL 连接失败: ${error.message}。请确保已正确配置 MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE 环境变量。`);
+      }
+    }
+
+    // Cloudflare Workers 环境：使用 D1 数据库
+    if (!env?.DB) {
+      throw new Error("DB 未绑定，请在 Cloudflare 绑定中配置 D1 数据库");
+    }
+
+    dbAdapter = env.DB;
+    await ensureDatabaseReady({ db: dbAdapter, env });
+    return dbAdapter;
+  })();
+
   try {
     await dbInitPromise;
   } catch (error) {
     // 初始化失败时允许后续请求重试，避免一次失败后永久跳过
     dbInitPromise = null;
+    dbAdapter = null;
     throw error;
   }
+
   return dbInitPromise;
 }
 
@@ -65,16 +97,17 @@ export default {
   async fetch(request, env, ctx) {
     try {
       if (!env || !env.ENCRYPTION_SECRET) {
-        throw new Error("ENCRYPTION_SECRET 未配置，请在Cloudflare绑定中设置安全密钥");
+        throw new Error("ENCRYPTION_SECRET 未配置，请在环境变量中设置安全密钥");
       }
+
+      // 确保数据库已初始化
+      const db = await ensureDbReadyOnce(env);
 
       const bindings = {
         ...env,
-        DB: env.DB,
+        DB: db,
         ENCRYPTION_SECRET: env.ENCRYPTION_SECRET,
       };
-
-      await ensureDbReadyOnce(env);
 
       return app.fetch(request, bindings, ctx);
     } catch (error) {
@@ -97,6 +130,14 @@ export default {
 
   async scheduled(controller, env, ctx) {
     try {
+      const platform = getCloudPlatform(env);
+
+      // EdgeOne Pages 暂不支持 scheduled 触发器
+      if (platform === "edgeone") {
+        console.warn("[scheduled] EdgeOne Pages 环境暂不支持 scheduled 触发器，跳过维护任务执行");
+        return;
+      }
+
       if (!env || !env.DB) {
         console.warn("[scheduled] 缺少 DB 绑定，跳过维护任务执行");
         return;
@@ -105,12 +146,14 @@ export default {
       console.log("[scheduled] Cloudflare scheduled 触发，开始检查到期后台任务...", new Date().toISOString());
 
       await ensureDbReadyOnce(env);
-      // 记录“真实触发发生”的证据
-      await upsertSchedulerTickState(env.DB, {
+      const db = dbAdapter || env.DB;
+
+      // 记录"真实触发发生"的证据
+      await upsertSchedulerTickState(db, {
         lastMs: Date.now(),
         lastCron: controller?.cron ? String(controller.cron) : null,
       });
-      await runDueScheduledJobs(env.DB, env);
+      await runDueScheduledJobs(db, env);
     } catch (error) {
       console.error("[scheduled] 执行维护任务时发生错误:", error);
     }
