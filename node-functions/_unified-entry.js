@@ -4,7 +4,7 @@
 // 在 Node/Docker 环境下启动基于 Hono 的 HTTP 服务器
 
 // 顶层导入仅包含跨环境可用的模块（Hono 应用与公共工具）
-import app from "./_app.js";
+import app from "./hono-app.js";
 import { ApiStatus } from "./constants/index.js";
 import { ensureDatabaseReady } from "./db/index.js";
 import { registerTaskHandlers } from "./storage/fs/tasks/registerHandlers.js";

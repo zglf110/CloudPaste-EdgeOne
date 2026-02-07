@@ -8,6 +8,6 @@
  */
 export async function onRequest(context) {
   // Use dynamic import to avoid EdgeOne CLI detecting this as a "Hono function"
-  const { default: app } = await import("../_app.js");
+  const { default: app } = await import("../hono-app.js");
   return app.fetch(context.request, context.env, context);
 }
