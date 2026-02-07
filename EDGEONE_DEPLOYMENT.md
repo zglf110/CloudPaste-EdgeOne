@@ -92,6 +92,18 @@ ENCRYPTION_SECRET=your-very-secure-random-secret-key-here
 ADMIN_TOKEN_EXPIRY_DAYS=7
 ```
 
+注意：某些环境变量管理界面或平台对环境变量值有严格限制（例如不允许值中包含空格、换行或制表符）。如果遇到限制，可以采用以下做法：
+
+- 在控制台直接填写原始值（推荐，若控制台允许）。
+- 在 .env 或 CI 中使用占位表示（例如将空格替换为下划线），并在应用启动时将其还原回原始格式。
+- 使用 Base64 对值进行编码并在程序中解码（适用于任意二进制/复杂值）。
+
+示例：生成 32 字节随机密钥
+
+```bash
+openssl rand -base64 32
+```
+
 #### 可选环境变量
 
 ```bash
@@ -104,6 +116,8 @@ LOG_LEVEL=info        # 日志级别：debug, info, warn, error
 # 如果使用 Cloudflare R2 或其他 S3 存储，可以通过管理界面配置
 # 这些配置通常在系统初始化后在管理界面中添加
 ```
+
+说明：仓库中的示例 `.env.example` 已移除 S3_*、S3_ENDPOINT、CLOUDFLARE_* 等与平台外部 CI/服务相关的示例变量。建议在生产环境中通过 EdgeOne 管理控制台或 CloudPaste 管理界面填写存储（R2/S3/B2）凭证，而不是将此类敏感密钥写入源码或公开的环境文件。
 
 ### 4. 部署到 EdgeOne Pages
 
