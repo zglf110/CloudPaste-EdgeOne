@@ -1,5 +1,16 @@
-// EdgeOne Pages Function Entry Point
+// EdgeOne Pages Function Entry Point - Catch-All Handler
 // This file exports the onRequest handler required by EdgeOne Pages
+//
+// This is a catch-all handler that processes all requests not matched by
+// specific route files in the node-functions/api/ directory.
+//
+// EdgeOne Pages routing priority:
+// 1. Static files from public/ directory
+// 2. Exact match route files (e.g., node-functions/api/admin/login.js for /api/admin/login)
+// 3. This [[default]].js catch-all handler (for dynamic routes, WebDAV, etc.)
+//
+// For more information about EdgeOne edge functions, see:
+// https://cloud.tencent.com/document/product/1552/127419
 
 import app from "./_app.js";
 import { ApiStatus } from "./constants/index.js";

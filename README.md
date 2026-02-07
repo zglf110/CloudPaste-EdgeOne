@@ -92,7 +92,7 @@
 
 ### Multiple Deployment Methods
 
-- **EdgeOne Pages**: 🆕 Native support for Tencent Cloud EdgeOne Pages with MySQL ([Deployment Guide](README_EDGEONE.md))
+- **EdgeOne Pages**: 🆕 Native support for Tencent Cloud EdgeOne Pages with MySQL ([Deployment Guide](EDGEONE_GUIDE.md))
 - **Automatic Deployment**: One-click deployment via GitHub Actions, supports automatic triggering
 - **Manual Deployment**: Wrangler CLI deployment, flexible and controllable
 - **Docker Deployment**: Frontend and backend images + Docker Compose one-click startup
@@ -104,16 +104,21 @@
 
 CloudPaste now supports direct deployment to Tencent Cloud EdgeOne Pages with MySQL backend. This is the recommended method for Chinese users.
 
+> **Important Update**: The project has been updated to comply with Tencent Cloud EdgeOne edge function requirements. API paths are now mapped to corresponding files in the `node-functions/api/` directory. See the deployment guide for details.
+
 **Quick Start:**
 ```bash
-# Install EdgeOne CLI
-npm install -g edgeone
+# Generate edge function files
+./scripts/generate-edge-functions.sh
+
+# Install EdgeOne CLI (if not installed)
+npm install -g @edgeone/cli
 
 # Deploy
 edgeone pages deploy
 ```
 
-📖 **Detailed Guide:** [README_EDGEONE.md](README_EDGEONE.md)
+📖 **Detailed Guide:** [EDGEONE_GUIDE.md](EDGEONE_GUIDE.md)
 
 ### ☁️ Cloudflare Workers
 

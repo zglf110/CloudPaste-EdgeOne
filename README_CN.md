@@ -112,7 +112,9 @@
 - [ ] 公网可访问的 MySQL 数据库（MySQL 5.7+ 或 8.0+）
 - [ ] Cloudflare R2 或其他 S3 兼容对象存储
 
-**📖 EdgeOne Pages 完整部署指南**: [查看 EDGEONE_DEPLOYMENT.md](EDGEONE_DEPLOYMENT.md)
+**📖 EdgeOne Pages 完整部署指南**: [查看 EDGEONE_GUIDE.md](EDGEONE_GUIDE.md)
+
+> **重要更新**: 项目已根据腾讯云 EdgeOne 边缘函数要求进行更新。API 路径现在映射到 `node-functions/api/` 目录下的对应文件。详见部署指南。
 
 #### 通用配置
 - [ ] 如使用 Vercel：注册 [Vercel](https://vercel.com) 账号
