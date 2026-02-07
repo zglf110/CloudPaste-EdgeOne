@@ -450,15 +450,29 @@ export default defineConfig(({ command, mode }) => {
           pure_funcs: ["console.log"],
         },
       },
-      chunkSizeWarningLimit: 1000,
+      // 提高警告阈值以减少噪音（仍建议拆分大依赖）
+      chunkSizeWarningLimit: 2000,
       rollupOptions: {
         output: {
-          manualChunks: {
-            // 将大型库分离到单独的 chunk
-            "vendor-vue": ["vue", "vue-router", "vue-i18n"],
-            "vendor-charts": ["chart.js", "vue-chartjs"],
-            "vendor-utils": ["qrcode", "file-saver", "docx", "@zumer/snapdom"],
-            "office-viewer": ["docx-preview", "@vue-office/excel/lib/v3/index.js", "@vue-office/pptx/lib/v3/index.js"],
+          // 使用函数按 package 名称拆分 node_modules，避免单个 chunk 过大
+          manualChunks(id) {
+            if (!id) return null;
+            if (id.includes('node_modules')) {
+              // 取 node_modules 后的第一个路径段作为包名（兼容 scoped packages）
+              const parts = id.split('node_modules/')[1].split('/');
+              let pkgName = parts[0];
+              if (pkgName && pkgName.startsWith('@') && parts.length > 1) {
+                pkgName = `${pkgName}/${parts[1]}`; // scoped 包名
+              }
+              // 对一些特别大的包做单独命名
+              const heavy = ['vue', 'vue-router', 'vue-i18n', 'chart.js', 'vue-chartjs', 'docx-preview', 'qrcode', 'file-saver', 'docx', '@vue-office', '@zumer'];
+              if (heavy.some((h) => pkgName.startsWith(h))) {
+                return `vendor-${pkgName.replace('@', '').replace('/', '-')}`;
+              }
+              // 默认把其它第三方库放入通用 vendor chunk
+              return 'vendor';
+            }
+            return null;
           },
         },
       },
