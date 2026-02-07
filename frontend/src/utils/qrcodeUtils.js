@@ -1,4 +1,13 @@
-import QRCode from "qrcode";
+let qrcodeModulePromise = null;
+
+async function loadQRCodeModule() {
+  if (!qrcodeModulePromise) {
+    qrcodeModulePromise = import("qrcode");
+  }
+
+  const module = await qrcodeModulePromise;
+  return module?.default || module;
+}
 
 /**
  * 统一的二维码生成工具
@@ -10,6 +19,8 @@ export async function generateQRCode(url, { darkMode = false, width = 300, margi
   if (!url) {
     throw new Error("无法生成二维码：URL为空");
   }
+
+  const QRCode = await loadQRCodeModule();
 
   return QRCode.toDataURL(url, {
     width,

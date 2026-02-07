@@ -3,7 +3,6 @@
  * 基于libarchive.js，专门处理RAR、7Z、TAR等格式文件
  */
 
-import { Archive } from "libarchive.js";
 import { sharedFileBlobCache, getOrDownloadFileBlob, isWebAssemblySupported, countTotalFiles, countExtractedFiles } from "./archiveUtils.js";
 import { createLogger } from "@/utils/logger.js";
 
@@ -16,6 +15,7 @@ class LibarchiveService {
   constructor() {
     this.libarchiveInitialized = false;
     this.initPromise = null;
+    this.Archive = null;
 
     // 简单配置对象
     this.config = {
@@ -101,7 +101,16 @@ class LibarchiveService {
 
       log.debug("正在初始化 libarchive.js WebWorker:", this.config.workerUrl);
 
-      Archive.init({
+      if (!this.Archive) {
+        const libarchiveModule = await import("libarchive.js");
+        this.Archive = libarchiveModule?.Archive || libarchiveModule?.default?.Archive || libarchiveModule?.default;
+      }
+
+      if (!this.Archive || typeof this.Archive.init !== "function") {
+        throw new Error("libarchive.js 未能正确加载 Archive");
+      }
+
+      this.Archive.init({
         workerUrl: this.config.workerUrl,
       });
 
@@ -133,7 +142,7 @@ class LibarchiveService {
       if (progressCallback) progressCallback(55, "检测加密");
 
       // 使用官方API打开压缩文件
-      const archive = await Archive.open(fileBlob);
+      const archive = await this.Archive.open(fileBlob);
 
       try {
         // 检查是否有加密数据
@@ -180,7 +189,7 @@ class LibarchiveService {
       if (progressCallback) progressCallback(75, "解析中");
 
       // 打开压缩文件
-      archive = await Archive.open(fileBlob);
+      archive = await this.Archive.open(fileBlob);
       // 设置密码
       await archive.usePassword(password);
       log.debug(`${archiveType.name} 文件密码已设置`);
@@ -295,7 +304,7 @@ class LibarchiveService {
     let archive = null;
     try {
       // 使用官方API打开压缩文件
-      archive = await Archive.open(fileBlob);
+      archive = await this.Archive.open(fileBlob);
       // 获取文件列表（不解压内容，按需解压模式）
       const filesObject = await archive.getFilesObject();
 
