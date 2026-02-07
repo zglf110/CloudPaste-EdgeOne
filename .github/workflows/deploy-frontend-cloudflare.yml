@@ -92,8 +92,14 @@ jobs:
 
       - name: Copy Cloudflare Functions
         run: |
-          mkdir -p dist/functions
-          cp -r functions/* dist/functions/ || echo "No functions directory found"
+          # The functions folder has been renamed to node-functions in the root
+          # Cloudflare Pages Functions should be in frontend/functions if needed
+          if [ -d "functions" ]; then
+            mkdir -p dist/functions
+            cp -r functions/* dist/functions/
+          else
+            echo "No frontend/functions directory found (expected for this setup)"
+          fi
 
       - name: Check if Pages project exists
         id: check-project
