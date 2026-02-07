@@ -1,18 +1,22 @@
 /**
  * EdgeOne Pages 边缘函数工具库
- * 
+ *
  * 提供以下功能：
  * - 数据库连接管理
  * - 日志记录系统
  * - 请求/响应处理（JSON、CORS）
  * - JWT 认证处理
  * - 错误处理
- * 
+ *
  * 这个文件适配 EdgeOne Pages 标准的 onRequest(context) 入口
+ *
+ * 注意：pg 和 jsonwebtoken 使用动态导入以避免 EdgeOne 打包错误
  */
 
-import { Client } from 'pg';
-import jwt from 'jsonwebtoken';
+// Dynamic imports for modules that should be external
+// These will be loaded only when actually needed
+let Client = null;
+let jwt = null;
 
 // ============ 环境变量配置 ============
 
@@ -97,6 +101,12 @@ export async function createDbClient() {
     database: DB_CONFIG.database,
     timeout: DB_CONFIG.connectionTimeoutMillis,
   });
+
+  // Dynamically import pg module
+  if (!Client) {
+    const pg = await import('pg');
+    Client = pg.Client;
+  }
 
   // 验证数据库配置
   const missingFields = [];
@@ -313,10 +323,15 @@ export function handleCorsPreFlight() {
  * @returns {string} JWT token
  * @throws {Error} 当JWT_SECRET未配置时
  */
-export function generateToken(payload, expiresIn = JWT_EXPIRE) {
+export async function generateToken(payload, expiresIn = JWT_EXPIRE) {
   if (!JWT_SECRET) {
     logger.error('[generateToken] JWT_SECRET is not configured');
     throw new Error('JWT_SECRET is not configured');
+  }
+
+  // Dynamically import jsonwebtoken module
+  if (!jwt) {
+    jwt = (await import('jsonwebtoken')).default;
   }
 
   try {
@@ -341,10 +356,15 @@ export function generateToken(payload, expiresIn = JWT_EXPIRE) {
  * @param {string} token - JWT token
  * @returns {Object|null} 解码的payload或null
  */
-export function verifyToken(token) {
+export async function verifyToken(token) {
   if (!JWT_SECRET) {
     logger.error('[verifyToken] JWT_SECRET is not configured');
     return null;
+  }
+
+  // Dynamically import jsonwebtoken module
+  if (!jwt) {
+    jwt = (await import('jsonwebtoken')).default;
   }
 
   try {
@@ -366,14 +386,14 @@ export function verifyToken(token) {
  * @param {string} authHeader - Authorization header值
  * @returns {Object|null} 解码的用户信息或null
  */
-export function handleAuthHeader(authHeader) {
+export async function handleAuthHeader(authHeader) {
   const token = extractToken(authHeader);
   if (!token) {
     logger.debug('[handleAuthHeader] No bearer token found');
     return null;
   }
 
-  return verifyToken(token);
+  return await verifyToken(token);
 }
 
 // ============ 错误处理 ============
