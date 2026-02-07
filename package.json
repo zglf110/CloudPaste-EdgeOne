@@ -1,0 +1,40 @@
+{
+  "name": "cloudpaste-edgeone",
+  "version": "1.9.1",
+  "description": "CloudPaste deployed on EdgeOne Pages with MySQL backend",
+  "type": "module",
+  "scripts": {
+    "dev": "edgeone pages dev",
+    "deploy": "edgeone pages deploy",
+    "build:frontend": "cd frontend && npm install && npm run build && cd .. && cp -r frontend/dist/* public/",
+    "prepare": "npm run build:frontend"
+  },
+  "keywords": [
+    "edgeone",
+    "pages",
+    "cloudpaste",
+    "mysql",
+    "hono"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@aws-crypto/sha256-browser": "^5.2.0",
+    "@aws-crypto/sha256-js": "^5.2.0",
+    "@aws-sdk/client-s3": "3.726.1",
+    "@aws-sdk/lib-storage": "3.726.1",
+    "@aws-sdk/s3-request-presigner": "3.726.1",
+    "@huggingface/hub": "^2.7.1",
+    "cron-parser": "^5.4.0",
+    "fast-xml-parser": "^5.2.5",
+    "file-type": "^21.0.0",
+    "hono": "^4.10.6",
+    "mime-types": "^3.0.1",
+    "mysql2": "^3.11.0",
+    "webdav": "^5.8.0"
+  },
+  "devDependencies": {
+    "@edgeone/ef-types": "^1.0.5",
+    "edgeone": "^1.0.21"
+  }
+}

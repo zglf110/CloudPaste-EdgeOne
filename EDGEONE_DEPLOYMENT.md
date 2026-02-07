@@ -95,6 +95,12 @@ ADMIN_TOKEN_EXPIRY_DAYS=7
 #### 可选环境变量
 
 ```bash
+# 日志配置（用于调试和故障排查）
+DEBUG_LOG=false       # 启用详细调试日志
+DEBUG_SQL=false       # 启用 SQL 查询日志
+DEBUG_DB=false        # 启用数据库操作日志
+LOG_LEVEL=info        # 日志级别：debug, info, warn, error
+
 # 如果使用 Cloudflare R2 或其他 S3 存储，可以通过管理界面配置
 # 这些配置通常在系统初始化后在管理界面中添加
 ```
@@ -189,6 +195,10 @@ npm install
 | 环境变量 | 说明 | 默认值 |
 |---------|------|--------|
 | `ADMIN_TOKEN_EXPIRY_DAYS` | 管理员 Token 过期天数 | `7` |
+| `DEBUG_LOG` | 启用详细调试日志 | `false` |
+| `DEBUG_SQL` | 启用 SQL 查询日志（包括执行时间） | `false` |
+| `DEBUG_DB` | 启用数据库操作日志（连接池、事务等） | `false` |
+| `LOG_LEVEL` | 日志级别（debug/info/warn/error） | `info` |
 | `DEBUG_DRIVER_CACHE` | 调试驱动缓存（开发用） | `false` |
 
 ## 与 Cloudflare Workers 部署的对比
@@ -227,6 +237,36 @@ npm install
 
 ## 故障排查
 
+### 启用调试日志
+
+当遇到问题时，启用调试日志可以帮助您快速定位问题：
+
+```bash
+# 启用所有调试日志
+DEBUG_LOG=true
+DEBUG_SQL=true
+DEBUG_DB=true
+LOG_LEVEL=debug
+```
+
+**日志说明**：
+
+- `DEBUG_LOG=true`: 启用详细的调试日志，包括操作执行时间、性能指标等
+- `DEBUG_SQL=true`: 记录所有 SQL 查询及其参数、执行时间
+- `DEBUG_DB=true`: 记录数据库连接池状态、事务操作等
+- `LOG_LEVEL=debug`: 设置日志级别为 debug（最详细）
+
+**日志示例**：
+
+```
+[2024-01-15T10:30:45.123Z] [MySQL] 开始初始化 MySQL 连接池 {"host":"mysql.example.com","port":3306,"database":"cloudpaste","ssl":false}
+[2024-01-15T10:30:45.456Z] [MySQL/DB] 执行健康检查
+[2024-01-15T10:30:45.789Z] [MySQL/DB] 健康检查通过
+[2024-01-15T10:30:45.890Z] [MySQL] MySQL 连接池初始化 完成 {"duration_ms":767}
+[2024-01-15T10:30:46.123Z] [MySQL/SQL]  {"sql":"SELECT * FROM users WHERE id = ?","params":[1],"duration_ms":45}
+[2024-01-15T10:30:46.234Z] [MySQL/DB] SQL 执行成功 (first) {"found":true,"duration_ms":111}
+```
+
 ### 常见问题
 
 #### 1. 数据库连接失败
@@ -239,6 +279,21 @@ npm install
 - 检查防火墙和安全组配置
 - 验证用户名和密码是否正确
 
+**调试步骤**:
+1. 启用调试日志查看详细连接信息：
+   ```bash
+   DEBUG_LOG=true
+   DEBUG_DB=true
+   ```
+2. 查看日志输出，确认连接参数：
+   ```
+   [MySQL] 开始初始化 MySQL 连接池 {"host":"...","port":3306,...}
+   ```
+3. 测试从本地到数据库的连接：
+   ```bash
+   mysql -h your-host -P 3306 -u your-user -p
+   ```
+
 #### 2. 数据表创建失败
 
 **错误**: `Table creation failed`
@@ -247,6 +302,18 @@ npm install
 - 确认数据库用户具有 CREATE、ALTER 权限
 - 检查数据库字符集是否为 `utf8mb4`
 - 查看日志获取详细错误信息
+
+**调试步骤**:
+1. 启用 SQL 日志查看执行的 SQL 语句：
+   ```bash
+   DEBUG_SQL=true
+   ```
+2. 查看日志中的 SQL 语句和错误信息
+3. 检查用户权限：
+   ```sql
+   GRANT ALL PRIVILEGES ON cloudpaste.* TO 'your_user'@'%';
+   FLUSH PRIVILEGES;
+   ```
 
 #### 3. 环境变量未生效
 
@@ -257,6 +324,16 @@ npm install
 - 重新部署应用以加载新的环境变量
 - 检查环境变量拼写是否正确
 
+**调试步骤**:
+1. 启用调试日志确认环境检测：
+   ```bash
+   DEBUG_LOG=true
+   ```
+2. 查看日志中的环境检测信息：
+   ```
+   [EdgeOne/Init] 检测到 EdgeOne Pages 环境，初始化 MySQL 连接
+   ```
+
 #### 4. 存储配置问题
 
 **错误**: 文件上传失败
@@ -265,6 +342,39 @@ npm install
 - 确认 R2 或 S3 配置正确
 - 检查 CORS 配置是否允许来自 EdgeOne Pages 域名的请求
 - 验证 Access Key 和 Secret Key 是否有效
+
+#### 5. SQL 查询性能问题
+
+**问题**: 某些操作响应缓慢
+
+**调试步骤**:
+1. 启用 SQL 性能日志：
+   ```bash
+   DEBUG_SQL=true
+   ```
+2. 查看慢查询日志，找出执行时间较长的 SQL：
+   ```
+   [MySQL/SQL]  {"sql":"...","params":[...],"duration_ms":1234}
+   ```
+3. 分析慢查询并添加索引或优化查询
+
+#### 6. 连接池耗尽
+
+**错误**: `Too many connections` 或连接超时
+
+**调试步骤**:
+1. 启用数据库日志查看连接池状态：
+   ```bash
+   DEBUG_DB=true
+   ```
+2. 查看连接池指标：
+   ```
+   [MySQL/Pool] 连接池状态 {"totalConnections":10,"freeConnections":2,"queuedRequests":5}
+   ```
+3. 如果连接池经常耗尽，考虑：
+   - 优化应用代码，确保连接及时释放
+   - 增加数据库连接限制
+   - 检查是否有死锁或长时间运行的查询
 
 ## 性能优化建议
 

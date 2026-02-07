@@ -92,12 +92,30 @@
 
 ### Multiple Deployment Methods
 
+- **EdgeOne Pages**: 🆕 Native support for Tencent Cloud EdgeOne Pages with MySQL ([Deployment Guide](README_EDGEONE.md))
 - **Automatic Deployment**: One-click deployment via GitHub Actions, supports automatic triggering
 - **Manual Deployment**: Wrangler CLI deployment, flexible and controllable
 - **Docker Deployment**: Frontend and backend images + Docker Compose one-click startup
 - **Multi-platform**: Supports Cloudflare, Vercel, ClawCloud, HuggingFace,etc.
 
 ## 🚀 Deployment Guide
+
+### 🌟 EdgeOne Pages (Tencent Cloud) - NEW!
+
+CloudPaste now supports direct deployment to Tencent Cloud EdgeOne Pages with MySQL backend. This is the recommended method for Chinese users.
+
+**Quick Start:**
+```bash
+# Install EdgeOne CLI
+npm install -g edgeone
+
+# Deploy
+edgeone pages deploy
+```
+
+📖 **Detailed Guide:** [README_EDGEONE.md](README_EDGEONE.md)
+
+### ☁️ Cloudflare Workers
 
 ### Prerequisites
 

@@ -48,6 +48,12 @@ ENCRYPTION_SECRET=生成一个32位随机字符串
 # ====== 可选配置 ======
 MYSQL_SSL=false
 ADMIN_TOKEN_EXPIRY_DAYS=7
+
+# ====== 调试日志（用于故障排查）======
+DEBUG_LOG=false       # 启用详细调试日志
+DEBUG_SQL=false       # 启用 SQL 查询日志
+DEBUG_DB=false        # 启用数据库操作日志
+LOG_LEVEL=info        # 日志级别：debug/info/warn/error
 ```
 
 ### 步骤 4: 构建并部署
@@ -134,6 +140,12 @@ ENCRYPTION_SECRET=your_32_character_random_secret_key_here
 
 # 可选配置
 ADMIN_TOKEN_EXPIRY_DAYS=7
+
+# 调试与日志配置（用于故障排查）
+DEBUG_LOG=false       # 启用详细调试日志
+DEBUG_SQL=false       # 启用 SQL 查询日志
+DEBUG_DB=false        # 启用数据库操作日志
+LOG_LEVEL=info        # 日志级别：debug/info/warn/error
 DEBUG_DRIVER_CACHE=false
 ```
 
@@ -142,12 +154,23 @@ DEBUG_DRIVER_CACHE=false
 部署完成后，检查以下项目：
 
 ### 1. 数据库连接
+
+**启用日志查看详细信息**:
+```bash
+DEBUG_LOG=true
+DEBUG_DB=true
+```
+
 查看日志，应该看到：
 ```
-[EdgeOne] 检测到 EdgeOne Pages 环境，初始化 MySQL 连接
-[EdgeOne] MySQL 数据库连接成功
-[MySQL] 开始初始化/迁移 MySQL 数据库
-[MySQL] 数据库初始化/迁移完成
+[EdgeOne/Init] 检测到 EdgeOne Pages 环境，初始化 MySQL 连接
+[MySQL] 开始初始化 MySQL 连接池 {"host":"...","port":3306,...}
+[MySQL/DB] 执行健康检查
+[MySQL/DB] 健康检查通过
+[MySQL] MySQL 连接池初始化 完成 {"duration_ms":...}
+[EdgeOne/Init] MySQL 数据库连接成功，EdgeOne Pages 环境已就绪
+[MySQL/Provider] 开始初始化/迁移 MySQL 数据库
+[MySQL/Provider] MySQL 数据库初始化/迁移 完成 {"duration_ms":...}
 ```
 
 ### 2. 应用访问
@@ -175,6 +198,15 @@ MySQL 连接失败: connect ETIMEDOUT
 - 确认防火墙允许外部连接
 - 验证用户名密码
 
+**调试方法**:
+```bash
+# 启用调试日志
+DEBUG_LOG=true
+DEBUG_DB=true
+
+# 查看详细连接信息
+```
+
 ### 错误 2: 数据表创建失败
 
 ```
@@ -193,6 +225,64 @@ FLUSH PRIVILEGES;
 ```bash
 # 确保设置了这个变量
 CLOUD_PLATFORM=edgeone
+
+# 启用日志确认
+DEBUG_LOG=true
+```
+
+查看日志应显示：
+```
+[EdgeOne/Init] 检测到 EdgeOne Pages 环境，初始化 MySQL 连接
+```
+
+## 🐛 调试技巧
+
+### 启用完整调试日志
+
+当遇到问题时，启用完整的调试日志：
+
+```bash
+DEBUG_LOG=true       # 启用详细调试日志
+DEBUG_SQL=true       # 查看所有 SQL 查询和执行时间
+DEBUG_DB=true        # 查看数据库连接池和事务状态
+LOG_LEVEL=debug      # 设置为最详细级别
+```
+
+### 查看 SQL 执行情况
+
+```bash
+# 启用 SQL 日志
+DEBUG_SQL=true
+```
+
+日志会显示：
+```
+[MySQL/SQL]  {"sql":"SELECT * FROM users WHERE id = ?","params":[1],"duration_ms":45}
+```
+
+### 监控连接池状态
+
+```bash
+# 启用数据库日志
+DEBUG_DB=true
+```
+
+日志会显示：
+```
+[MySQL/Pool] 连接池状态 {"totalConnections":10,"freeConnections":8,"queuedRequests":0}
+```
+
+### 性能分析
+
+启用性能日志查看操作耗时：
+```bash
+DEBUG_LOG=true
+```
+
+日志会显示每个操作的执行时间：
+```
+[MySQL] MySQL 连接池初始化 完成 {"duration_ms":767}
+[MySQL/Provider] MySQL 数据库初始化/迁移 完成 {"duration_ms":1234}
 ```
 
 ## 📚 进阶配置

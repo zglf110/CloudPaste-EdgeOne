@@ -107,4 +107,5 @@ out
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
-.spec-workflow
+.spec-workflowbackend/test-logger.js
+node_modules/
