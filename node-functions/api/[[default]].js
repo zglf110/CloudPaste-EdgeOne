@@ -12,14 +12,14 @@
 // For more information about EdgeOne edge functions, see:
 // https://cloud.tencent.com/document/product/1552/127419
 
-import app from "./_app.js";
-import { ApiStatus } from "./constants/index.js";
-import { ensureDatabaseReady } from "./db/index.js";
-import { registerTaskHandlers } from "./storage/fs/tasks/registerHandlers.js";
-import { registerJobTypes, validateJobTypesConsistency } from "./storage/fs/tasks/registerJobTypes.js";
-import { registerScheduledHandlers } from "./scheduled/ScheduledTaskRegistry.js";
-import { getCloudPlatform } from "./utils/environmentUtils.js";
-import { createLogger } from "./utils/logger.js";
+import app from "../_app.js";
+import { ApiStatus } from "../constants/index.js";
+import { ensureDatabaseReady } from "../db/index.js";
+import { registerTaskHandlers } from "../storage/fs/tasks/registerHandlers.js";
+import { registerJobTypes, validateJobTypesConsistency } from "../storage/fs/tasks/registerJobTypes.js";
+import { registerScheduledHandlers } from "../scheduled/ScheduledTaskRegistry.js";
+import { getCloudPlatform } from "../utils/environmentUtils.js";
+import { createLogger } from "../utils/logger.js";
 
 // Register all task handlers and job types at module load time
 registerTaskHandlers();
@@ -48,7 +48,7 @@ async function ensureDbReadyOnce(env) {
       logger.info("Detected EdgeOne Pages environment, initializing MySQL connection");
 
       // Dynamically import MySQL adapter (load only when needed)
-      const { createMySQLAdapterFromEnv } = await import("./adapters/MySQLAdapter.js");
+      const { createMySQLAdapterFromEnv } = await import("../adapters/MySQLAdapter.js");
 
       try {
         dbAdapter = await createMySQLAdapterFromEnv(env);
