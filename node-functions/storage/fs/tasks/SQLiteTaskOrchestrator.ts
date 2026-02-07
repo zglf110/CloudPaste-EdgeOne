@@ -4,7 +4,7 @@
  *
  */
 
-import Database from 'better-sqlite3';
+import { createRequire } from 'module';
 import { DbTables } from '../../../constants/index.js';
 import { taskRegistry } from './TaskRegistry.js';
 import type { TaskHandler, InternalJob, ExecutionContext } from './TaskHandler.js';
@@ -17,8 +17,22 @@ import type {
 import { TaskStatus } from './types.js';
 import type { JobFilter, JobListResult, TaskStats } from './types.js';
 
+const require = createRequire(import.meta.url);
+
+function loadBetterSqlite3() {
+  const moduleName = ["better", "sqlite3"].join("-");
+  try {
+    const mod = require(moduleName);
+    return mod.default || mod;
+  } catch (error) {
+    throw new Error(
+      "better-sqlite3 module is required for SQLiteTaskOrchestrator. Install it in the deployment environment or switch to a MySQL/D1 task orchestrator."
+    );
+  }
+}
+
 export class SQLiteTaskOrchestrator implements TaskOrchestratorAdapter {
-  private db: Database.Database;
+  private db: any;
   private workers: Promise<void>[] = [];
   private running = false;
   private fileSystem: any;
@@ -30,6 +44,7 @@ export class SQLiteTaskOrchestrator implements TaskOrchestratorAdapter {
   ) {
     this.fileSystem = fileSystem;
     // 初始化 SQLite 连接 (tasks 表已由 database.js migration case 25 创建)
+    const Database = loadBetterSqlite3();
     this.db = new Database(dbPath);
 
     // PRAGMA 优化

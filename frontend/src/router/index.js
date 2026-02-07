@@ -7,6 +7,7 @@ import OfflineFallback from "../components/OfflineFallback.vue";
 import { showPageUnavailableToast } from "../pwa/offlineToast.js";
 import { useAuthStore } from "@/stores/authStore.js";
 import { useSiteConfigStore } from "@/stores/siteConfigStore.js";
+import i18n from "../i18n/index.js";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import { createLogger } from "@/utils/logger.js";
@@ -667,8 +668,6 @@ router.afterEach(async (to, from) => {
   let siteTitle = "CloudPaste";
 
   try {
-    // 动态导入站点配置Store
-    const { useSiteConfigStore } = await import("../stores/siteConfigStore.js");
     const siteConfigStore = useSiteConfigStore();
 
     // 获取站点标题（如果store已初始化）
@@ -676,8 +675,6 @@ router.afterEach(async (to, from) => {
       siteTitle = siteConfigStore.siteTitle || "CloudPaste";
     }
 
-    // 动态导入 i18n 实例
-    const { default: i18n } = await import("../i18n/index.js");
     const { t } = i18n.global;
 
     // 根据路由名称设置对应的国际化标题

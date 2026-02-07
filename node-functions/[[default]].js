@@ -1,7 +1,7 @@
 // EdgeOne Pages Function Entry Point
 // This file exports the onRequest handler required by EdgeOne Pages
 
-import app from "./index.js";
+import app from "./_app.js";
 import { ApiStatus } from "./constants/index.js";
 import { ensureDatabaseReady } from "./db/index.js";
 import { registerTaskHandlers } from "./storage/fs/tasks/registerHandlers.js";
