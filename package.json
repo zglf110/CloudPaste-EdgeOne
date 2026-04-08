@@ -1,4 +1,5 @@
 {
+  "build": "npm run build:frontend"
   "name": "cloudpaste-edgeone",
   "version": "1.9.1",
   "description": "CloudPaste deployed on EdgeOne Pages with MySQL backend",
